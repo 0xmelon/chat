@@ -302,75 +302,67 @@ export default function () {
             ></PromptList>
           </Show>
           <div class="flex items-end">
-            <textarea
-  ref={inputRef!}
-  id="input"
-  placeholder="与 ta 对话吧"
-  autocomplete="off"
-  value={inputContent()}
-  autofocus
-  onClick={scrollToBottom}
-  onKeyDown={e => {
-  if (compatiblePrompt().length) {
-    if (e.key === "ArrowUp" || e.key === "ArrowDown" || e.key === "Enter") {
-      e.preventDefault();
-    }
-  } else if (e.key === "Enter") {
-    if (!e.shiftKey && !e.isComposing) {
-      if (isAuthenticated) { // 如果已经认证，则直接执行 handleButtonClick 函数
-        handleButtonClick();
-      } else { // 否则需要先输入密码
-        const inputPassword = document.getElementById("password") as HTMLInputElement;
-        if (inputPassword.value === password) {
-          setIsAuthenticated(true);
-          handleButtonClick();
-        } else {
-          alert("Password is incorrect!");
-        }
-      }
-    }
-  }
-}}
-  onInput={e => {
-    setHeight("48px")
-    const { scrollHeight } = e.currentTarget
-    setHeight(
-      `${
-        scrollHeight > window.innerHeight - 64
-          ? window.innerHeight - 64
-          : scrollHeight
-      }px`
-    )
-    let { value } = e.currentTarget
-    setInputContent(value)
-    if (value === "/" || value === " ")
-      return setCompatiblePrompt(prompts)
-    const promptKey = value.replace(/^[\/ ](.*)/, "$1")
-    if (promptKey !== value)
-      setCompatiblePrompt(fzf.find(promptKey).map(k => k.item))
-  }}
-  style={{
-    height: height(),
-    "border-top-right-radius": height() === "48px" ? 0 : "0.25rem",
-    "border-top-left-radius":
-      compatiblePrompt().length === 0 ? "0.25rem" : 0
-  }}
-  class="self-end py-3 resize-none w-full px-3 text-slate-7 dark:text-slate bg-slate bg-op-15 focus:bg-op-20 focus:ring-0 focus:outline-none placeholder:text-slate-400 placeholder:text-slate-400 placeholder:op-40"
-  rounded-l
-/>
-<input type="password" id="password" placeholder="请输入密码" onChange={e => setPassword(e.target.value)} />
-<Show when={inputContent()}>
-  <button
-    class="i-carbon:add-filled absolute right-3.5em bottom-3em rotate-45 text-op-20! hover:text-op-80! text-slate-7 dark:text-slate"
-    onClick={() => {
-    setInputContent("");
-    inputRef.current?.focus();
-    setPassword("");
-    setIsAuthenticated(false);
-  }}
-/>
-</Show>
-            
+           ref={inputRef!}
+              id="input"
+              placeholder="与 ta 对话吧"
+              autocomplete="off"
+              value={inputContent()}
+              autofocus
+              onClick={scrollToBottom}
+              // onBlur={() => {
+              //   setCompatiblePrompt([])
+              // }}
+              onKeyDown={e => {
+                if (compatiblePrompt().length) {
+                  if (
+                    e.key === "ArrowUp" ||
+                    e.key === "ArrowDown" ||
+                    e.key === "Enter"
+                  ) {
+                    e.preventDefault()
+                  }
+                } else if (e.key === "Enter") {
+                  if (!e.shiftKey && !e.isComposing) {
+                    handleButtonClick()
+                  }
+                }
+              }}
+              onInput={e => {
+                setHeight("48px")
+                const { scrollHeight } = e.currentTarget
+                setHeight(
+                  `${
+                    scrollHeight > window.innerHeight - 64
+                      ? window.innerHeight - 64
+                      : scrollHeight
+                  }px`
+                )
+                let { value } = e.currentTarget
+                setInputContent(value)
+                if (value === "/" || value === " ")
+                  return setCompatiblePrompt(prompts)
+                const promptKey = value.replace(/^[\/ ](.*)/, "$1")
+                if (promptKey !== value)
+                  setCompatiblePrompt(fzf.find(promptKey).map(k => k.item))
+              }}
+              style={{
+                height: height(),
+                "border-top-right-radius": height() === "48px" ? 0 : "0.25rem",
+                "border-top-left-radius":
+                  compatiblePrompt().length === 0 ? "0.25rem" : 0
+              }}
+              class="self-end py-3 resize-none w-full px-3 text-slate-7 dark:text-slate bg-slate bg-op-15 focus:bg-op-20 focus:ring-0 focus:outline-none placeholder:text-slate-400 placeholder:text-slate-400 placeholder:op-40"
+              rounded-l
+            />
+            <Show when={inputContent()}>
+              <button
+                class="i-carbon:add-filled absolute right-3.5em bottom-3em rotate-45 text-op-20! hover:text-op-80! text-slate-7 dark:text-slate"
+                onClick={() => {
+                  setInputContent("")
+                  inputRef.focus()
+                }}
+              />
+            </Show>
             <div
               class="flex text-slate-7 dark:text-slate bg-slate bg-op-15 text-op-80! hover:text-op-100! h-3em items-center rounded-r"
               style={{
