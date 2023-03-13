@@ -36,8 +36,6 @@ export default function () {
   const [containerWidth, setContainerWidth] = createSignal("init")
   const fzf = new Fzf(prompts, { selector: k => `${k.desc} (${k.prompt})` })
   const [height, setHeight] = createSignal("48px")
-  const [password, setPassword] = useState<string>(""); // 用于保存密码的状态
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); // 用于保存是否已经认证的状态
 
   onMount(() => {
     createResizeObserver(containerRef, ({ width, height }, el) => {
