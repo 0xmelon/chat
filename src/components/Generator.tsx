@@ -2,14 +2,12 @@ import { createEffect, createSignal, For, onMount, Show } from "solid-js"
 import { createResizeObserver } from "@solid-primitives/resize-observer"
 import MessageItem from "./MessageItem"
 import type { ChatMessage } from "~/types"
-import SettingAction from "./SettingAction"
+import Setting from "./Setting"
 import PromptList from "./PromptList"
 import prompts from "~/prompts"
 import { Fzf } from "fzf"
 import { defaultMessage, defaultSetting } from "~/default"
 import throttle from "just-throttle"
-import { isMobile } from "~/utils"
-// import { mdMessage } from "~/temp"
 
 export interface PromptItem {
   desc: string
@@ -24,7 +22,7 @@ export default function () {
   const [messageList, setMessageList] = createSignal<ChatMessage[]>([
     // {
     //   role: "assistant",
-    //   content: mdMessage
+    //   content: defaultMessage + defaultMessage + defaultMessage + defaultMessage
     // }
   ])
   const [inputContent, setInputContent] = createSignal("")
@@ -82,16 +80,9 @@ export default function () {
   })
 
   createEffect(() => {
-    messageList()
+    messageList().length
     currentAssistantMessage()
     scrollToBottom()
-  })
-
-  createEffect(() => {
-    if (inputContent() === "") {
-      setHeight("48px")
-      setCompatiblePrompt([])
-    }
   })
 
   const scrollToBottom = throttle(
@@ -117,8 +108,7 @@ export default function () {
       setCurrentAssistantMessage("")
       setLoading(false)
       setController()
-      !isMobile() && inputRef.focus()
-      scrollToBottom.flush()
+      inputRef.focus()
     }
   }
 
@@ -130,6 +120,8 @@ export default function () {
     // @ts-ignore
     if (window?.umami) umami.trackEvent("chat_generate")
     setInputContent("")
+    setCompatiblePrompt([])
+    setHeight("48px")
     if (
       !value ||
       value !==
@@ -205,10 +197,11 @@ export default function () {
     }
   }
 
-  function clearSession() {
-    // setInputContent("")
+  function clear() {
+    setInputContent("")
     setMessageList([])
     setCurrentAssistantMessage("")
+    setCompatiblePrompt([])
   }
 
   function stopStreamFetch() {
@@ -228,35 +221,21 @@ export default function () {
 
   function selectPrompt(prompt: string) {
     setInputContent(prompt)
+    // setHeight("48px")
+    setHeight(inputRef.scrollHeight + "px")
     setCompatiblePrompt([])
-    const { scrollHeight } = inputRef
-    setHeight(
-      `${
-        scrollHeight > window.innerHeight - 64
-          ? window.innerHeight - 64
-          : scrollHeight
-      }px`
-    )
-    inputRef.focus()
   }
 
   return (
     <div mt-6 ref={containerRef!}>
-      <div
-        id="message-container"
-        style={{
-          "background-color": "var(--c-bg)"
-        }}
-      >
-        <For each={messageList()}>
-          {message => (
-            <MessageItem role={message.role} message={message.content} />
-          )}
-        </For>
-        {currentAssistantMessage() && (
-          <MessageItem role="assistant" message={currentAssistantMessage} />
+      <For each={messageList()}>
+        {message => (
+          <MessageItem role={message.role} message={message.content} />
         )}
-      </div>
+      </For>
+      {currentAssistantMessage() && (
+        <MessageItem role="assistant" message={currentAssistantMessage} />
+      )}
       <div
         class="pb-2em fixed bottom-0 z-100 op-0"
         style={
@@ -266,17 +245,16 @@ export default function () {
                 transition: "opacity 0.3s ease-in-out",
                 width: containerWidth(),
                 opacity: 100,
-                "background-color": "var(--c-bg)"
+                "background-color": "var(--bg)"
               }
         }
       >
         <Show when={!compatiblePrompt().length && height() === "48px"}>
-          <SettingAction
+          <Setting
             setting={setting}
             setSetting={setSetting}
-            clear={clearSession}
+            clear={clear}
             reAnswer={reAnswer}
-            messaages={messageList()}
           />
         </Show>
         <Show
@@ -300,7 +278,8 @@ export default function () {
             ></PromptList>
           </Show>
           <div class="flex items-end">
-           ref={inputRef!}
+            <textarea
+              ref={inputRef!}
               id="input"
               placeholder="与 ta 对话吧"
               autocomplete="off"
@@ -337,6 +316,7 @@ export default function () {
                 )
                 let { value } = e.currentTarget
                 setInputContent(value)
+                if (value === "") return setCompatiblePrompt([])
                 if (value === "/" || value === " ")
                   return setCompatiblePrompt(prompts)
                 const promptKey = value.replace(/^[\/ ](.*)/, "$1")
@@ -349,20 +329,20 @@ export default function () {
                 "border-top-left-radius":
                   compatiblePrompt().length === 0 ? "0.25rem" : 0
               }}
-              class="self-end py-3 resize-none w-full px-3 text-slate-7 dark:text-slate bg-slate bg-op-15 focus:bg-op-20 focus:ring-0 focus:outline-none placeholder:text-slate-400 placeholder:text-slate-400 placeholder:op-40"
+              class="self-end py-3 resize-none w-full px-3 text-slate bg-slate bg-op-15 focus:bg-op-20 focus:ring-0 focus:outline-none placeholder:text-slate-400 placeholder:op-30"
               rounded-l
             />
             <Show when={inputContent()}>
               <button
-                class="i-carbon:add-filled absolute right-3.5em bottom-3em rotate-45 text-op-20! hover:text-op-80! text-slate-7 dark:text-slate"
+                class="i-carbon:add-filled absolute right-3.5em bottom-3em rotate-45 hover:text-op-100 text-slate text-op-15"
                 onClick={() => {
                   setInputContent("")
-                  inputRef.focus()
+                  setHeight("48px")
                 }}
               />
             </Show>
             <div
-              class="flex text-slate-7 dark:text-slate bg-slate bg-op-15 text-op-80! hover:text-op-100! h-3em items-center rounded-r"
+              class="flex text-slate bg-slate bg-op-15 h-3em items-center rounded-r"
               style={{
                 "border-top-right-radius":
                   compatiblePrompt().length === 0 ? "0.25rem" : 0
@@ -371,7 +351,7 @@ export default function () {
               <button
                 title="发送"
                 onClick={() => handleButtonClick()}
-                class="i-carbon:send-filled text-5 mx-3"
+                class="i-carbon:send-filled text-5 mx-3 hover:text-slate-2"
               />
             </div>
           </div>
